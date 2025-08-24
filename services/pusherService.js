@@ -1,16 +1,13 @@
 const Pusher = require('pusher');
 
 const pusher = new Pusher({
-    appId: process.env.PUSHER_APP_ID,
-    key: process.env.PUSHER_APP_KEY,
-    secret: process.env.PUSHER_APP_SECRET,
-    cluster: process.env.PUSHER_APP_CLUSTER,
-    useTLS: true
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_APP_KEY,
+  secret: process.env.PUSHER_APP_SECRET,
+  cluster: process.env.PUSHER_APP_CLUSTER,
+  useTLS: true,
 });
 
-exports.subscribeToChannel = (channelName, callback) => {
-    const channel = pusher.subscribe(channelName);
-    channel.bind('new-log', (data) => {
-        callback(data);
-    });
+exports.sendStatusUpdate = (data) => {
+  return pusher.trigger('deployment-status', 'status-update', data);
 };
