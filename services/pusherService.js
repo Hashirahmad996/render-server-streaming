@@ -9,5 +9,5 @@ const pusher = new Pusher({
 });
 
 exports.sendStatusUpdate = (data) => {
-  return pusher.trigger('deployment-status', 'status-update', data);
+  return pusher.trigger('my‑channel', 'my‑event', data);
 };
