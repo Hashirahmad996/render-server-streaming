@@ -8,6 +8,6 @@ const pusher = new Pusher({
   useTLS: true,
 });
 
-exports.sendStatusUpdate = (data) => {
-  return pusher.trigger('my‑channel', 'my‑event', data);
+exports.sendStatusUpdate = async (data) => {
+  await pusher.trigger('my-channel', 'my-event', data);
 };
