@@ -21,7 +21,7 @@ exports.triggerDeploymentStatus = async (req, res) => {
 
     // 3. When everything is finished, send the success event
     const data = req.body;
-    await pusherService.sendSuccess(data);
+    await pusherService.sendStatusUpdate(data);
 
     // --- End of your deployment logic ---
 
