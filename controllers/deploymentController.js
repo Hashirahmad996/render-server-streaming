@@ -13,10 +13,12 @@ exports.triggerDeploymentStatus = async (req, res) => {
 
     // 2. Do your actual deployment work here
     //    (e.g., run scripts, provision infrastructure)
-    await someAsyncFunctionForDeploymentStep1();
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    await sleep(2000); // Simulate some work
     await pusherService.sendLogUpdate('Infrastructure provisioning complete...');
 
-    await anotherAsyncFunctionForStep2();
+    await sleep(2000); // Simulate some more work
     await pusherService.sendLogUpdate('Application deployment complete...');
 
     // 3. When everything is finished, send the success event
