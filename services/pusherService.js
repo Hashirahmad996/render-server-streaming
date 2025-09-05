@@ -37,6 +37,7 @@ const triggerEvent = (channel, event, data) => {
  * Call this function multiple times during your deployment 
  * to send real-time log messages to the frontend.
  */
+
 exports.sendLogUpdate = async (logMessage) => {
   await triggerEvent('my-channel', 'log-update', { message: logMessage });
 };
@@ -47,6 +48,8 @@ exports.sendLogUpdate = async (logMessage) => {
 exports.sendError = async (errorMessage) => {
   await triggerEvent('my-channel', 'deployment-error', { message: errorMessage });
 };
+
+
 
 /**
  * Call this function only once at the very end when the 
