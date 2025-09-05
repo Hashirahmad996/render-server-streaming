@@ -2,9 +2,6 @@ const pusherService = require('../services/pusherService');
 
 
 exports.triggerDeploymentStatus = async (req, res) => {
-  // We can send an initial response to the webhook caller right away
-  res.status(202).send('Deployment process initiated.');
-
   try {
     // --- Start of your deployment logic ---
 
@@ -13,21 +10,25 @@ exports.triggerDeploymentStatus = async (req, res) => {
 
     // 2. Do your actual deployment work here
     //    (e.g., run scripts, provision infrastructure)
-    await someAsyncFunctionForDeploymentStep1();
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    await sleep(2000); // Simulate some work
     await pusherService.sendLogUpdate('Infrastructure provisioning complete...');
 
-    await anotherAsyncFunctionForStep2();
+    await sleep(2000); // Simulate some more work
     await pusherService.sendLogUpdate('Application deployment complete...');
 
     // 3. When everything is finished, send the success event
     const data = req.body;
-    await pusherService.sendSuccess(data);
+    await pusherService.sendStatusUpdate(data);
 
     // --- End of your deployment logic ---
+    res.status(200).json({ status: 'success', message: 'Deployment triggered and completed.' });
 
   } catch (error) {
     // 4. If any step in the `try` block fails, send an error event
     console.error('Deployment failed:', error);
     await pusherService.sendError(`Deployment failed: ${error.message}`);
+    res.status(500).json({ status: 'error', message: `Deployment failed: ${error.message}` });
   }
 };
