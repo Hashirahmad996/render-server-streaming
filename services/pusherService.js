@@ -8,36 +8,72 @@ const pusher = new Pusher({
   useTLS: true,
 });
 
+// --- Robust Pusher Service with Sequential Execution ---
+
+// Queue to hold pending Pusher events. Each item will be an object
+// with { channel, event, data, resolve, reject }.
+const eventQueue = [];
+
+// Flag to ensure that we only process one event at a time.
+let isProcessing = false;
+
 /**
- * A helper function to trigger a Pusher event and wrap the callback-based
- * API in a Promise, ensuring we can reliably `await` it.
+ * Processes the event queue sequentially. This function is called recursively
+ * until the queue is empty.
+ */
+const processQueue = async () => {
+  if (eventQueue.length === 0) {
+    isProcessing = false;
+    return;
+  }
+
+  isProcessing = true;
+  const { channel, event, data, resolve, reject } = eventQueue.shift();
+
+  try {
+    const response = await new Promise((res, rej) => {
+      pusher.trigger(channel, event, data, (error, request, response) => {
+        if (error) {
+          console.error("Pusher trigger error:", error);
+          // For log events, we resolve even on error to not stop the primary flow.
+          // For critical events, this could be changed to rej(error).
+          return res();
+        }
+        res(response);
+      });
+    });
+    resolve(response);
+  } catch (error) {
+    // This will be caught if the inner promise is rejected.
+    reject(error);
+  }
+
+  // Process the next item in the queue
+  processQueue();
+};
+
+/**
+ * A robust helper function to trigger a Pusher event. It adds the event to a
+ * queue and ensures that events are processed one by one, in the order they
+ * were received.
  * @param {string} channel The channel to trigger on.
  * @param {string} event The name of the event.
  * @param {any} data The data to send.
- * @returns {Promise<any>} A promise that resolves with the response or rejects with an error.
+ * @returns {Promise<any>} A promise that resolves when the event is sent.
  */
 const triggerEvent = (channel, event, data) => {
   return new Promise((resolve, reject) => {
-    pusher.trigger(channel, event, data, (error, request, response) => {
-      if (error) {
-        console.error("Pusher trigger error:", error);
-        // Don't reject the promise here for log events,
-        // as the primary flow shouldn't stop if a log fails to send.
-        // But for critical events, you might want to reject.
-        // For now, we'll log and resolve.
-        return resolve(); // Or reject(error) if you want failures to stop the process
-      }
-      resolve(response);
-    });
+    eventQueue.push({ channel, event, data, resolve, reject });
+    if (!isProcessing) {
+      processQueue();
+    }
   });
 };
-
 
 /**
  * Call this function multiple times during your deployment 
  * to send real-time log messages to the frontend.
  */
-
 exports.sendLogUpdate = async (logMessage) => {
   await triggerEvent('my-channel', 'log-update', { message: logMessage });
 };
@@ -48,8 +84,6 @@ exports.sendLogUpdate = async (logMessage) => {
 exports.sendError = async (errorMessage) => {
   await triggerEvent('my-channel', 'deployment-error', { message: errorMessage });
 };
-
-
 
 /**
  * Call this function only once at the very end when the 
