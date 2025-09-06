@@ -9,18 +9,11 @@ const pusher = new Pusher({
 });
 
 /**
- * Call this function multiple times during your deployment 
- * to send real-time log messages to the frontend.
+ * Triggers an event on a specified Pusher channel.
+ * @param {string} channel - The name of the channel.
+ * @param {string} eventName - The name of the event.
+ * @param {object} data - The payload to send with the event.
  */
-exports.sendLogUpdate = async (logMessage) => { await pusher.trigger('my-channel', 'log-update', { message: logMessage }); };
-
-/**
- * Call this function if the deployment fails at any point.
- */
-exports.sendError = async (errorMessage) => { await pusher.trigger('my-channel', 'deployment-error', { message: errorMessage }); };
-
-/**
- * Call this function only once at the very end when the 
- * deployment has completed successfully.
- */
-exports.sendStatusUpdate = async (data) => { await pusher.trigger('my-channel', 'deployment-success', data); };
+exports.triggerEvent = async (channel, eventName, data) => {
+  await pusher.trigger(channel, eventName, data);
+};
