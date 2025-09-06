@@ -1,35 +1,29 @@
 const pusherService = require('../services/pusherService');
 
+/**
+ * Forwards a webhook event to the appropriate Pusher channels.
+ */
+exports.forwardPusherEvent = async (req, res) => {
+  const { channels, name, data } = req.body;
 
-exports.triggerDeploymentStatus = async (req, res) => {
-  // We can send an initial response to the webhook caller right away
-  res.status(202).send('Deployment process initiated.');
+  if (!channels || !name || !data) {
+    return res.status(400).json({ error: 'Request body must include "channels", "name", and "data" fields.' });
+  }
+
+  if (!Array.isArray(channels)) {
+    return res.status(400).json({ error: 'The "channels" field must be an array.' });
+  }
 
   try {
-    // --- Start of your deployment logic ---
+    // Trigger the event on all specified channels
+    const triggerPromises = channels.map(channel =>
+      pusherService.triggerEvent(channel, name, data)
+    );
+    await Promise.all(triggerPromises);
 
-    // 1. Send initial log update
-    await pusherService.sendLogUpdate('Deployment initiated by webhook...');
-
-    // 2. Do your actual deployment work here
-    //    (e.g., run scripts, provision infrastructure)
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    await sleep(2000); // Simulate some work
-    await pusherService.sendLogUpdate('Infrastructure provisioning complete...');
-
-    await sleep(2000); // Simulate some more work
-    await pusherService.sendLogUpdate('Application deployment complete...');
-
-    // 3. When everything is finished, send the success event
-    const data = req.body;
-    await pusherService.sendStatusUpdate(data);
-
-    // --- End of your deployment logic ---
-
+    res.status(200).json({ message: 'Event forwarded successfully to Pusher.' });
   } catch (error) {
-    // 4. If any step in the `try` block fails, send an error event
-    console.error('Deployment failed:', error);
-    await pusherService.sendError(`Deployment failed: ${error.message}`);
+    console.error('Failed to forward event to Pusher:', error);
+    res.status(500).json({ error: 'Internal server error while forwarding event.' });
   }
 };
